@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
-from models import User, Recommendation, Survey
+from middleware.firebase_auth import get_current_user
+from models import Recommendation, Survey, User
 from services.ai_service import generate_recommendations
 from services.redis_cache import get_cached, set_cached
-from middleware.firebase_auth import get_current_user
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 

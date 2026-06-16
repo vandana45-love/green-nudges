@@ -4,8 +4,8 @@ Gemini API calls are mocked to keep tests fast and offline.
 """
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
-import pytest
 
+import pytest
 
 # ── generate_recommendations ──────────────────────────────────────────────────
 

@@ -1,11 +1,11 @@
 """Firebase user profile endpoints."""
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
-from models import User
 from middleware.firebase_auth import get_current_user
+from models import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 

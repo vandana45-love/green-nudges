@@ -1,9 +1,9 @@
 import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
-from routers import auth, survey, carbon, recommendations, chat
+from routers import auth, carbon, chat, recommendations, survey
 
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
 

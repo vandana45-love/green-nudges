@@ -3,12 +3,13 @@ Unit tests for the carbon calculation engine.
 Tests cover all diet types, transport modes, energy types, and edge cases.
 """
 import pytest
+
 from services.carbon_engine import (
     CarbonBreakdown,
-    calculate_baseline,
     _calculate_energy,
     _calculate_food,
     _calculate_transport,
+    calculate_baseline,
 )
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────

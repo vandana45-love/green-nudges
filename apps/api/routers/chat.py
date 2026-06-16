@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from services.ai_service import stream_chat
 from middleware.firebase_auth import get_current_user
+from services.ai_service import stream_chat
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 

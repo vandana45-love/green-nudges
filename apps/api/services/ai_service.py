@@ -5,6 +5,7 @@ import re
 from typing import AsyncIterator
 
 import google.generativeai as genai
+
 from config import settings
 
 logger = logging.getLogger(__name__)

@@ -3,8 +3,9 @@ Sliding-window rate limiting via Redis.
 Limits are per Clerk user ID extracted from the JWT sub claim.
 Falls back gracefully if Redis is unavailable (allows request, logs warning).
 """
-import time
 import logging
+import time
+
 from fastapi import HTTPException, Request, status
 
 logger = logging.getLogger(__name__)

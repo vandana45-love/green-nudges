@@ -3,7 +3,7 @@ Carbon emission factor math using DEFRA 2023 / EPA eGRID constants.
 All outputs in kg CO2e per year. Phase 2 will replace constants with Climatiq API.
 """
 from dataclasses import dataclass
-from typing import TypedDict, Literal
+from typing import Literal, TypedDict
 
 # ── Emission factors (kg CO2e per unit) ──────────────────────────────────────
 EF: dict[str, float] = {

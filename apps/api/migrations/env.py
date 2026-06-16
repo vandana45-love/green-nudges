@@ -1,10 +1,11 @@
 import asyncio
 from logging.config import fileConfig
-from sqlalchemy.ext.asyncio import create_async_engine
-from alembic import context
 
-from db import Base
+from alembic import context
+from sqlalchemy.ext.asyncio import create_async_engine
+
 import models  # noqa: F401 — registers all ORM models
+from db import Base
 
 config = context.config
 if config.config_file_name is not None:

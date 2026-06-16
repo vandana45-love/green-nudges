@@ -21,7 +21,7 @@ jest.mock("@/lib/auth", () => ({
 
 // next/link just renders an <a>
 jest.mock("next/link", () => {
-  const Link = ({ href, children, className }: any) => (
+  const Link = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
     <a href={href} className={className}>{children}</a>
   );
   Link.displayName = "Link";

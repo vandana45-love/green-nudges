@@ -1,5 +1,7 @@
 import json
+
 import redis.asyncio as aioredis
+
 from config import settings
 
 _pool: aioredis.Redis | None = None

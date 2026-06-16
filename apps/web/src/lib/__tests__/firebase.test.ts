@@ -11,7 +11,7 @@ jest.mock("firebase/firestore", () => ({
   getFirestore: jest.fn(() => ({ type: "firestore" })),
 }));
 
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import app, { auth, db } from "../firebase";
@@ -51,7 +51,9 @@ describe("firebase initialisation", () => {
     jest.doMock("firebase/auth", () => ({ getAuth: jest.fn(() => ({})) }));
     jest.doMock("firebase/firestore", () => ({ getFirestore: jest.fn(() => ({})) }));
 
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { initializeApp: init2 } = require("firebase/app");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("../firebase");
     expect(init2).not.toHaveBeenCalled();
   });

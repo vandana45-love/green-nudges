@@ -1,13 +1,14 @@
 from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db
-from models import User, Survey
-from services.carbon_engine import calculate_baseline
 from middleware.firebase_auth import get_current_user
+from models import Survey, User
+from services.carbon_engine import calculate_baseline
 
 router = APIRouter(prefix="/survey", tags=["survey"])
 

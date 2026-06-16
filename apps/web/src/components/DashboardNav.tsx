@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
@@ -45,11 +46,14 @@ export default function DashboardNav() {
         {user && (
           <div className="flex items-center gap-2 mb-3">
             {user.photoURL && (
-              <img
+              <Image
                 src={user.photoURL}
                 alt=""
-                className="w-7 h-7 rounded-full"
+                width={28}
+                height={28}
+                className="rounded-full"
                 referrerPolicy="no-referrer"
+                unoptimized
               />
             )}
             <div className="min-w-0">
