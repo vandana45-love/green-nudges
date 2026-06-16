@@ -1,0 +1,26 @@
+# env
+.env
+.env.local
+.env.*.local
+
+# dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js
+apps/web/.next/
+apps/web/out/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+apps/api/.venv/
+apps/api/__pycache__/
+
+# misc
+.DS_Store
+*.log
+dist/
+build/

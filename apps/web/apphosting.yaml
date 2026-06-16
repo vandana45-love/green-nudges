@@ -1,0 +1,32 @@
+# Firebase App Hosting configuration for Next.js SSR
+# Docs: https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  maxInstances: 10
+  minInstances: 0
+  concurrency: 80
+
+env:
+  - variable: NEXT_PUBLIC_API_URL
+    secret: NEXT_PUBLIC_API_URL
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+    secret: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: CLERK_SECRET_KEY
+    secret: CLERK_SECRET_KEY
+    availability:
+      - RUNTIME
+
+  - variable: CLERK_WEBHOOK_SECRET
+    secret: CLERK_WEBHOOK_SECRET
+    availability:
+      - RUNTIME
