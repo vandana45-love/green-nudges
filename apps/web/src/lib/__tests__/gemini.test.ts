@@ -80,6 +80,24 @@ describe("generateRecommendations", () => {
   });
 });
 
+describe("streamGeminiChat — no API key", () => {
+  it("yields not-configured message when KEY is empty", async () => {
+    let streamFn: typeof streamGeminiChat;
+    const original = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY = "";
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      ({ streamGeminiChat: streamFn } = require("../gemini"));
+    });
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY = original;
+    const chunks: string[] = [];
+    for await (const chunk of streamFn!("Hi", [])) {
+      chunks.push(chunk);
+    }
+    expect(chunks[0]).toMatch(/not configured/i);
+  });
+});
+
 describe("streamGeminiChat", () => {
   afterEach(() => jest.clearAllMocks());
 

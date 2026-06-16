@@ -104,6 +104,12 @@ describe("calculateCarbon", () => {
       expect(longHaul.transportKg).toBeGreaterThan(shortHaul.transportKg);
     });
 
+    it("bus produces less transport emissions than car", () => {
+      const bus = calculateCarbon({ ...BASE, transportMode: "bus" });
+      const car = calculateCarbon({ ...BASE, transportMode: "car" });
+      expect(bus.transportKg).toBeLessThan(car.transportKg);
+    });
+
     it("bicycle transport with no flights = 0 transport emissions", () => {
       const result = calculateCarbon({ ...BASE, transportMode: "bicycle", vehicleType: "none", flightsPerYear: 0 });
       expect(result.transportKg).toBe(0);

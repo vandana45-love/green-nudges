@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { getRecommendations } from "@/lib/firestore";
+import type { RecommendationItem } from "@/lib/firestore";
 
 const META: Record<string, { icon: string; color: string }> = {
   transport: { icon: "🚗", color: "bg-blue-50 border-blue-100" },
@@ -14,7 +15,7 @@ const META: Record<string, { icon: string; color: string }> = {
 
 export default function CoachPage() {
   const { user, loading } = useAuth();
-  const [recs, setRecs] = useState<any[]>([]);
+  const [recs, setRecs] = useState<RecommendationItem[]>([]);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function CoachPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {recs.map((r: any, i: number) => {
+          {recs.map((r: RecommendationItem, i: number) => {
             const m = META[r.category] ?? META.general;
             return (
               <div key={i} className={`rounded-2xl border p-5 space-y-2 ${m.color}`}>
