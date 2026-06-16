@@ -7,7 +7,7 @@ from db import get_db
 from models import User, Recommendation, Survey
 from services.ai_service import generate_recommendations
 from services.redis_cache import get_cached, set_cached
-from middleware.clerk_auth import get_current_user_id
+from middleware.firebase_auth import get_current_user
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -22,10 +22,10 @@ class RecommendationOut(BaseModel):
 
 @router.get("/me", response_model=list[RecommendationOut])
 async def get_recommendations(
-    clerk_id: str = Depends(get_current_user_id),
+    user_uid: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    user = await db.scalar(select(User).where(User.clerk_id == clerk_id))
+    user = await db.scalar(select(User).where(User.clerk_id == user_uid))
     if not user:
         raise HTTPException(404, "User not found")
 
@@ -80,10 +80,10 @@ async def get_recommendations(
 @router.patch("/{rec_id}/read")
 async def mark_read(
     rec_id: int,
-    clerk_id: str = Depends(get_current_user_id),
+    user_uid: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    user = await db.scalar(select(User).where(User.clerk_id == clerk_id))
+    user = await db.scalar(select(User).where(User.clerk_id == user_uid))
     if not user:
         raise HTTPException(404, "User not found")
     # Only allow marking own recommendations as read

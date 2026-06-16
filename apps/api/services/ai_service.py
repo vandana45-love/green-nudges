@@ -1,9 +1,18 @@
+"""AI recommendation and chat service backed by Google Gemini 2.0 Flash."""
 import json
+import logging
 import re
+from typing import AsyncIterator
+
 import google.generativeai as genai
 from config import settings
 
-genai.configure(api_key=settings.gemini_api_key)
+logger = logging.getLogger(__name__)
+
+if not settings.gemini_api_key:
+    logger.warning("GEMINI_API_KEY not configured — AI features will return fallback responses")
+else:
+    genai.configure(api_key=settings.gemini_api_key)
 
 SYSTEM_PROMPT = """You are a personal carbon coach for the Green Nudges platform.
 Help users understand and reduce their carbon footprint.
@@ -23,7 +32,7 @@ async def generate_recommendations(
     energy_kg: float,
     food_kg: float,
     shopping_kg: float,
-) -> list[dict]:
+) -> list[dict[str, object]]:
     prompt = f"""
 User monthly emissions:
 - Transport: {transport_kg:.0f} kg CO2
@@ -52,7 +61,7 @@ Sort by highest savings_kg first."""
     ]
 
 
-async def stream_chat(message: str, history: list[dict]):
+async def stream_chat(message: str, history: list[dict[str, str]]) -> AsyncIterator[str]:
     model = _get_model()
     chat = model.start_chat(
         history=[

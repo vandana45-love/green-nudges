@@ -1,20 +1,38 @@
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from db import get_db
 from models import User, Survey
 from services.carbon_engine import calculate_baseline
-from middleware.clerk_auth import get_current_user_id
+from middleware.firebase_auth import get_current_user
 
 router = APIRouter(prefix="/survey", tags=["survey"])
 
 
+class HomeData(BaseModel):
+    house_size_m2: float = Field(gt=0, le=1000, description="House floor area in m²")
+    occupants: int = Field(ge=1, le=20, description="Number of people sharing the home")
+    heating_type: Literal["electric", "oil", "gas"] = "gas"
+
+
+class LifestyleData(BaseModel):
+    diet: Literal["vegan", "vegetarian", "pescatarian", "omnivore", "meat_heavy"] = "omnivore"
+    flights_per_year: int = Field(ge=0, le=365, description="Return flights per year")
+    flight_type: Literal["short", "long"] = "short"
+    transport_mode: Literal["car", "bus", "train", "bicycle"] = "car"
+
+
+class VehicleData(BaseModel):
+    type: Literal["ice", "hybrid", "ev", "none"] = "ice"
+
+
 class SurveyIn(BaseModel):
-    home: dict
-    lifestyle: dict
-    vehicle: dict
+    home: HomeData
+    lifestyle: LifestyleData
+    vehicle: VehicleData
 
 
 class SurveyOut(BaseModel):
@@ -25,10 +43,11 @@ class SurveyOut(BaseModel):
     shopping_kg: float
 
 
-async def _get_or_create_user(clerk_id: str, db: AsyncSession) -> User:
-    user = await db.scalar(select(User).where(User.clerk_id == clerk_id))
+async def _get_or_create_user(user_uid: str, db: AsyncSession) -> User:
+    """Return existing User row or create one for the given Firebase UID."""
+    user = await db.scalar(select(User).where(User.clerk_id == user_uid))
     if not user:
-        user = User(clerk_id=clerk_id, email="")
+        user = User(clerk_id=user_uid, email="")
         db.add(user)
         await db.flush()
     return user
@@ -37,17 +56,22 @@ async def _get_or_create_user(clerk_id: str, db: AsyncSession) -> User:
 @router.post("", response_model=SurveyOut)
 async def submit_survey(
     body: SurveyIn,
-    clerk_id: str = Depends(get_current_user_id),
+    user_uid: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
-    user = await _get_or_create_user(clerk_id, db)
-    bd = calculate_baseline(body.home, body.lifestyle, body.vehicle)
+) -> SurveyOut:
+    """Submit the onboarding survey and return the calculated carbon baseline."""
+    user = await _get_or_create_user(user_uid, db)
+    bd = calculate_baseline(
+        body.home.model_dump(),
+        body.lifestyle.model_dump(),
+        body.vehicle.model_dump(),
+    )
 
     survey = Survey(
         user_id=user.id,
-        home_data=body.home,
-        lifestyle_data=body.lifestyle,
-        vehicle_data=body.vehicle,
+        home_data=body.home.model_dump(),
+        lifestyle_data=body.lifestyle.model_dump(),
+        vehicle_data=body.vehicle.model_dump(),
         baseline_kg=bd.total_kg,
         transport_kg=bd.transport_kg,
         energy_kg=bd.energy_kg,
@@ -68,17 +92,20 @@ async def submit_survey(
 
 @router.get("/me", response_model=SurveyOut)
 async def get_my_survey(
-    clerk_id: str = Depends(get_current_user_id),
+    user_uid: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
-    user = await db.scalar(select(User).where(User.clerk_id == clerk_id))
+) -> SurveyOut:
+    """Return the most recent survey for the authenticated user."""
+    user = await db.scalar(select(User).where(User.clerk_id == user_uid))
     if not user:
-        raise HTTPException(404, "User not found")
+        raise HTTPException(status_code=404, detail="User not found")
     survey = await db.scalar(
-        select(Survey).where(Survey.user_id == user.id).order_by(Survey.created_at.desc())
+        select(Survey)
+        .where(Survey.user_id == user.id)
+        .order_by(Survey.created_at.desc())
     )
     if not survey:
-        raise HTTPException(404, "Survey not found")
+        raise HTTPException(status_code=404, detail="No survey found — complete onboarding first")
     return SurveyOut(
         baseline_kg=survey.baseline_kg,
         transport_kg=survey.transport_kg,
