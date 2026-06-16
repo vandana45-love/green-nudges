@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { getSurvey } from "@/lib/firestore";
+import type { SurveyDoc } from "@/lib/firestore";
 import CategoryCard from "@/components/CategoryCard";
 import NormChart from "@/components/NormChart";
 
@@ -12,7 +13,7 @@ const SPARK = [{ v: 70 }, { v: 65 }, { v: 80 }, { v: 60 }, { v: 55 }, { v: 50 },
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [survey, setSurvey] = useState<any>(null);
+  const [survey, setSurvey] = useState<SurveyDoc | null>(null);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        {CARDS.map(c => <CategoryCard key={c.label} {...c} colorClass="" sparkData={SPARK} />)}
+        {CARDS.map(c => <CategoryCard key={c.label} {...c} sparkData={SPARK} />)}
       </div>
 
       <NormChart userKg={monthly.total_kg} />

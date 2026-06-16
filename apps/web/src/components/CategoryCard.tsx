@@ -8,7 +8,6 @@ interface Props {
   kg: number;
   trend?: number | null;
   sparkData?: { v: number }[];
-  colorClass: string;
 }
 
 export default function CategoryCard({ icon, label, kg, trend, sparkData }: Props) {

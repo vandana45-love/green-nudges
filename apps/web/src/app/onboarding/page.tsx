@@ -5,10 +5,48 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { saveSurvey, saveRecommendations } from "@/lib/firestore";
 import { generateRecommendations } from "@/lib/gemini";
-import type { SurveyInput } from "@/lib/carbon";
+import type { SurveyInput, HeatingType, Diet, FlightType, TransportMode, VehicleType } from "@/lib/carbon";
 
 type Step = 1 | 2 | 3;
 const STEPS = ["Home", "Lifestyle", "Vehicle"];
+
+interface StepHomeData {
+  houseSizeM2: number;
+  occupants: number;
+  heatingType: HeatingType;
+}
+
+interface StepLifestyleData {
+  diet: Diet;
+  flightsPerYear: number;
+  flightType: FlightType;
+  transportMode: TransportMode;
+}
+
+interface StepVehicleData {
+  vehicleType: VehicleType;
+}
+
+interface StepHomeProps {
+  data: StepHomeData;
+  onChange: (data: StepHomeData) => void;
+  onNext: () => void;
+}
+
+interface StepLifestyleProps {
+  data: StepLifestyleData;
+  onChange: (data: StepLifestyleData) => void;
+  onBack: () => void;
+  onNext: () => void;
+}
+
+interface StepVehicleProps {
+  data: StepVehicleData;
+  onChange: (data: StepVehicleData) => void;
+  onBack: () => void;
+  onSubmit: () => void;
+  loading: boolean;
+}
 
 export default function OnboardingPage() {
   const { user, loading } = useAuth();
@@ -17,9 +55,9 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [home, setHome] = useState({ houseSizeM2: 80, occupants: 2, heatingType: "gas" });
-  const [lifestyle, setLifestyle] = useState({ diet: "omnivore", flightsPerYear: 2, flightType: "short", transportMode: "car" });
-  const [vehicle, setVehicle] = useState({ vehicleType: "ice" });
+  const [home, setHome] = useState<StepHomeData>({ houseSizeM2: 80, occupants: 2, heatingType: "gas" });
+  const [lifestyle, setLifestyle] = useState<StepLifestyleData>({ diet: "omnivore", flightsPerYear: 2, flightType: "short", transportMode: "car" });
+  const [vehicle, setVehicle] = useState<StepVehicleData>({ vehicleType: "ice" });
 
   useEffect(() => {
     if (!loading && !user) router.replace("/sign-in");
@@ -66,7 +104,7 @@ export default function OnboardingPage() {
   );
 }
 
-function StepHome({ data, onChange, onNext }: any) {
+function StepHome({ data, onChange, onNext }: StepHomeProps) {
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-bold text-gray-900">Your Home</h2>
@@ -82,7 +120,7 @@ function StepHome({ data, onChange, onNext }: any) {
       </label>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Heating type</span>
-        <select value={data.heatingType} onChange={e => onChange({ ...data, heatingType: e.target.value })}
+        <select value={data.heatingType} onChange={e => onChange({ ...data, heatingType: e.target.value as HeatingType })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="gas">Natural Gas</option>
           <option value="electric">Electric / Heat Pump</option>
@@ -94,13 +132,13 @@ function StepHome({ data, onChange, onNext }: any) {
   );
 }
 
-function StepLifestyle({ data, onChange, onBack, onNext }: any) {
+function StepLifestyle({ data, onChange, onBack, onNext }: StepLifestyleProps) {
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-bold text-gray-900">Your Lifestyle</h2>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Diet</span>
-        <select value={data.diet} onChange={e => onChange({ ...data, diet: e.target.value })}
+        <select value={data.diet} onChange={e => onChange({ ...data, diet: e.target.value as Diet })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="vegan">Vegan</option>
           <option value="vegetarian">Vegetarian</option>
@@ -116,7 +154,7 @@ function StepLifestyle({ data, onChange, onBack, onNext }: any) {
       </label>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Typical flight length</span>
-        <select value={data.flightType} onChange={e => onChange({ ...data, flightType: e.target.value })}
+        <select value={data.flightType} onChange={e => onChange({ ...data, flightType: e.target.value as FlightType })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="short">Short-haul (&lt; 3h)</option>
           <option value="long">Long-haul (&gt; 3h)</option>
@@ -124,7 +162,7 @@ function StepLifestyle({ data, onChange, onBack, onNext }: any) {
       </label>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Primary transport</span>
-        <select value={data.transportMode} onChange={e => onChange({ ...data, transportMode: e.target.value })}
+        <select value={data.transportMode} onChange={e => onChange({ ...data, transportMode: e.target.value as TransportMode })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="car">Car</option>
           <option value="bus">Bus</option>
@@ -140,17 +178,17 @@ function StepLifestyle({ data, onChange, onBack, onNext }: any) {
   );
 }
 
-function StepVehicle({ data, onChange, onBack, onSubmit, loading }: any) {
+function StepVehicle({ data, onChange, onBack, onSubmit, loading }: StepVehicleProps) {
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-bold text-gray-900">Your Vehicle</h2>
       <div className="grid grid-cols-2 gap-3">
-        {[
-          { value: "ice", label: "⛽ Petrol / Diesel" },
-          { value: "hybrid", label: "🔋 Hybrid" },
-          { value: "ev", label: "⚡ Electric" },
-          { value: "none", label: "🚶 No Car" },
-        ].map(opt => (
+        {([
+          { value: "ice" as VehicleType, label: "⛽ Petrol / Diesel" },
+          { value: "hybrid" as VehicleType, label: "🔋 Hybrid" },
+          { value: "ev" as VehicleType, label: "⚡ Electric" },
+          { value: "none" as VehicleType, label: "🚶 No Car" },
+        ]).map(opt => (
           <button key={opt.value} onClick={() => onChange({ vehicleType: opt.value })}
             className={`p-4 rounded-xl border-2 text-left transition ${data.vehicleType === opt.value ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-brand-300"}`}>
             {opt.label}

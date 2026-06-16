@@ -62,7 +62,8 @@ export async function* streamGeminiChat(message: string, history: Array<{ role: 
       const text = chunk.text();
       if (text) yield text;
     }
-  } catch (err: any) {
-    yield `Error: ${err?.message ?? "Could not connect to Gemini"}`;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Could not connect to Gemini";
+    yield `Error: ${message}`;
   }
 }

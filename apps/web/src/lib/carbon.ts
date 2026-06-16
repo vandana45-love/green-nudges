@@ -1,12 +1,18 @@
+export type HeatingType = "electric" | "oil" | "gas";
+export type Diet = "vegan" | "vegetarian" | "pescatarian" | "omnivore" | "meat_heavy";
+export type FlightType = "short" | "long";
+export type TransportMode = "car" | "bus" | "train" | "bicycle";
+export type VehicleType = "ice" | "hybrid" | "ev" | "none";
+
 export interface SurveyInput {
   houseSizeM2: number;
   occupants: number;
-  heatingType: string;
-  diet: string;
+  heatingType: HeatingType;
+  diet: Diet;
   flightsPerYear: number;
-  flightType: string;
-  transportMode: string;
-  vehicleType: string;
+  flightType: FlightType;
+  transportMode: TransportMode;
+  vehicleType: VehicleType;
 }
 
 export interface CarbonBreakdown {
@@ -17,7 +23,7 @@ export interface CarbonBreakdown {
   baselineKg: number;
 }
 
-const DIET_KG: Record<string, number> = {
+const DIET_KG: Record<Diet, number> = {
   vegan: 1300,
   vegetarian: 1700,
   pescatarian: 1900,
@@ -26,12 +32,10 @@ const DIET_KG: Record<string, number> = {
 };
 
 export function calculateCarbon(s: SurveyInput): CarbonBreakdown {
-  // Energy (DEFRA 2023)
   const kwhPerYear = (s.houseSizeM2 * 150) / Math.max(s.occupants, 1);
   const energyFactor = s.heatingType === "electric" ? 0.207 : s.heatingType === "oil" ? 2.52 : 2.204;
   const energyKg = kwhPerYear * energyFactor;
 
-  // Ground transport
   const kmPerYear = 12000;
   let groundKg = 0;
   if (s.transportMode === "car") {
@@ -43,13 +47,12 @@ export function calculateCarbon(s: SurveyInput): CarbonBreakdown {
     groundKg = kmPerYear * 0.035;
   }
 
-  // Flights (round-trip)
   const flightKm = s.flightType === "long" ? 8000 : 1500;
   const flightFactor = s.flightType === "long" ? 0.195 : 0.133;
   const flightKg = s.flightsPerYear * flightKm * 2 * flightFactor;
 
   const transportKg = groundKg + flightKg;
-  const foodKg = DIET_KG[s.diet] ?? DIET_KG.omnivore;
+  const foodKg = DIET_KG[s.diet];
   const shoppingKg = 1000;
   const baselineKg = energyKg + transportKg + foodKg + shoppingKg;
 

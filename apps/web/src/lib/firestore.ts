@@ -1,9 +1,10 @@
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import type { FieldValue, Timestamp } from "firebase/firestore";
 import { db } from "./firebase";
 import { calculateCarbon, SurveyInput, CarbonBreakdown } from "./carbon";
 
 export interface SurveyDoc extends SurveyInput, CarbonBreakdown {
-  createdAt?: unknown;
+  createdAt?: FieldValue | Timestamp;
 }
 
 export interface RecommendationItem {
