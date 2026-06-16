@@ -6,10 +6,10 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://green:nudges@localhost:5432/greennudges"
     redis_url: str = "redis://localhost:6379/0"
-    openai_api_key: str = ""
-    clerk_secret_key: str = ""
-    clerk_webhook_secret: str = ""
-    climatiq_api_key: str = ""
+    gemini_api_key: str = ""
+    firebase_project_id: str = "goolge-cdc11"
+    allowed_origins: str = "http://localhost:3000,https://goolge-cdc11.web.app,https://goolge-cdc11.firebaseapp.com"
+    env: str = "development"
 
 
 settings = Settings()

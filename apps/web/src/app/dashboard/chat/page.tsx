@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { streamGeminiChat } from "@/lib/gemini";
 
 interface Message {
   role: "user" | "assistant";
@@ -11,12 +11,11 @@ interface Message {
 const SUGGESTED = [
   "Why did my emissions increase?",
   "How can I save 100 kg this month?",
-  "Is chicken better than beef?",
-  "What's the impact of one flight?",
+  "Is chicken better than beef for the environment?",
+  "What's the carbon impact of one flight?",
 ];
 
 export default function ChatPage() {
-  const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -37,29 +36,16 @@ export default function ChatPage() {
     setMessages(prev => [...prev, assistantMsg]);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history: messages }),
-      });
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (!reader) return;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n").filter(l => l.startsWith("data: "));
-        for (const line of lines) {
-          const token = line.slice(6);
-          if (token === "[DONE]") break;
-          setMessages(prev => {
-            const copy = [...prev];
-            copy[copy.length - 1] = { role: "assistant", content: copy[copy.length - 1].content + token };
-            return copy;
-          });
-        }
+      const history = messages.map(m => ({ role: m.role, content: m.content }));
+      for await (const chunk of streamGeminiChat(text, history)) {
+        setMessages(prev => {
+          const copy = [...prev];
+          copy[copy.length - 1] = {
+            role: "assistant",
+            content: copy[copy.length - 1].content + chunk,
+          };
+          return copy;
+        });
       }
     } finally {
       setStreaming(false);
@@ -70,14 +56,14 @@ export default function ChatPage() {
     <div className="max-w-2xl flex flex-col h-[calc(100vh-6rem)]">
       <div className="mb-4">
         <h1 className="text-3xl font-bold text-gray-900">Carbon Assistant</h1>
-        <p className="text-gray-500 mt-1">Ask anything about your footprint</p>
+        <p className="text-gray-500 mt-1">Powered by Google Gemini · Ask anything</p>
       </div>
 
       <div className="flex-1 overflow-y-auto bg-white rounded-2xl border border-gray-100 p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center py-12 space-y-4">
             <p className="text-4xl">🌿</p>
-            <p className="text-gray-500">Ask your carbon coach anything</p>
+            <p className="text-gray-500">Ask your AI carbon coach anything</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {SUGGESTED.map(s => (
                 <button

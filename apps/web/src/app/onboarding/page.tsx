@@ -1,43 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
-import { submitSurvey } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { saveSurvey, saveRecommendations } from "@/lib/firestore";
+import { generateRecommendations } from "@/lib/gemini";
+import type { SurveyInput } from "@/lib/carbon";
 
 type Step = 1 | 2 | 3;
-
-interface HomeData { house_size_m2: number; occupants: number; heating_type: string }
-interface LifestyleData { diet: string; flights_per_year: number; flight_type: string; transport_mode: string }
-interface VehicleData { type: string }
-
 const STEPS = ["Home", "Lifestyle", "Vehicle"];
 
 export default function OnboardingPage() {
-  const { getToken } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const [home, setHome] = useState<HomeData>({ house_size_m2: 80, occupants: 2, heating_type: "gas" });
-  const [lifestyle, setLifestyle] = useState<LifestyleData>({ diet: "omnivore", flights_per_year: 2, flight_type: "short", transport_mode: "car" });
-  const [vehicle, setVehicle] = useState<VehicleData>({ type: "ice" });
+  const [home, setHome] = useState({ houseSizeM2: 80, occupants: 2, heatingType: "gas" });
+  const [lifestyle, setLifestyle] = useState({ diet: "omnivore", flightsPerYear: 2, flightType: "short", transportMode: "car" });
+  const [vehicle, setVehicle] = useState({ vehicleType: "ice" });
+
+  useEffect(() => {
+    if (!loading && !user) router.replace("/sign-in");
+  }, [user, loading, router]);
 
   async function handleSubmit() {
-    setLoading(true);
+    if (!user) return;
+    setSaving(true);
     setError("");
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
-      await submitSurvey(token, { home, lifestyle, vehicle });
+      const input: SurveyInput = { ...home, ...lifestyle, ...vehicle };
+      const survey = await saveSurvey(user.uid, input);
+      const recs = await generateRecommendations(survey);
+      await saveRecommendations(user.uid, recs);
       router.push("/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-gray-400">Loading…</div>;
 
   return (
     <div className="min-h-screen bg-brand-50 flex items-center justify-center px-4">
@@ -55,19 +60,19 @@ export default function OnboardingPage() {
 
         {step === 1 && <StepHome data={home} onChange={setHome} onNext={() => setStep(2)} />}
         {step === 2 && <StepLifestyle data={lifestyle} onChange={setLifestyle} onBack={() => setStep(1)} onNext={() => setStep(3)} />}
-        {step === 3 && <StepVehicle data={vehicle} onChange={setVehicle} onBack={() => setStep(2)} onSubmit={handleSubmit} loading={loading} />}
+        {step === 3 && <StepVehicle data={vehicle} onChange={setVehicle} onBack={() => setStep(2)} onSubmit={handleSubmit} loading={saving} />}
       </div>
     </div>
   );
 }
 
-function StepHome({ data, onChange, onNext }: { data: HomeData; onChange: (d: HomeData) => void; onNext: () => void }) {
+function StepHome({ data, onChange, onNext }: any) {
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-bold text-gray-900">Your Home</h2>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">House size (m²)</span>
-        <input type="number" value={data.house_size_m2} onChange={e => onChange({ ...data, house_size_m2: +e.target.value })}
+        <input type="number" value={data.houseSizeM2} onChange={e => onChange({ ...data, houseSizeM2: +e.target.value })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
       </label>
       <label className="block">
@@ -77,7 +82,7 @@ function StepHome({ data, onChange, onNext }: { data: HomeData; onChange: (d: Ho
       </label>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Heating type</span>
-        <select value={data.heating_type} onChange={e => onChange({ ...data, heating_type: e.target.value })}
+        <select value={data.heatingType} onChange={e => onChange({ ...data, heatingType: e.target.value })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="gas">Natural Gas</option>
           <option value="electric">Electric / Heat Pump</option>
@@ -89,7 +94,7 @@ function StepHome({ data, onChange, onNext }: { data: HomeData; onChange: (d: Ho
   );
 }
 
-function StepLifestyle({ data, onChange, onBack, onNext }: { data: LifestyleData; onChange: (d: LifestyleData) => void; onBack: () => void; onNext: () => void }) {
+function StepLifestyle({ data, onChange, onBack, onNext }: any) {
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-bold text-gray-900">Your Lifestyle</h2>
@@ -106,20 +111,20 @@ function StepLifestyle({ data, onChange, onBack, onNext }: { data: LifestyleData
       </label>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Flights per year</span>
-        <input type="number" min={0} value={data.flights_per_year} onChange={e => onChange({ ...data, flights_per_year: +e.target.value })}
+        <input type="number" min={0} value={data.flightsPerYear} onChange={e => onChange({ ...data, flightsPerYear: +e.target.value })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500" />
       </label>
       <label className="block">
         <span className="text-sm font-medium text-gray-700">Typical flight length</span>
-        <select value={data.flight_type} onChange={e => onChange({ ...data, flight_type: e.target.value })}
+        <select value={data.flightType} onChange={e => onChange({ ...data, flightType: e.target.value })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="short">Short-haul (&lt; 3h)</option>
           <option value="long">Long-haul (&gt; 3h)</option>
         </select>
       </label>
       <label className="block">
-        <span className="text-sm font-medium text-gray-700">Primary transport mode</span>
-        <select value={data.transport_mode} onChange={e => onChange({ ...data, transport_mode: e.target.value })}
+        <span className="text-sm font-medium text-gray-700">Primary transport</span>
+        <select value={data.transportMode} onChange={e => onChange({ ...data, transportMode: e.target.value })}
           className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500">
           <option value="car">Car</option>
           <option value="bus">Bus</option>
@@ -135,7 +140,7 @@ function StepLifestyle({ data, onChange, onBack, onNext }: { data: LifestyleData
   );
 }
 
-function StepVehicle({ data, onChange, onBack, onSubmit, loading }: { data: VehicleData; onChange: (d: VehicleData) => void; onBack: () => void; onSubmit: () => void; loading: boolean }) {
+function StepVehicle({ data, onChange, onBack, onSubmit, loading }: any) {
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-bold text-gray-900">Your Vehicle</h2>
@@ -146,8 +151,8 @@ function StepVehicle({ data, onChange, onBack, onSubmit, loading }: { data: Vehi
           { value: "ev", label: "⚡ Electric" },
           { value: "none", label: "🚶 No Car" },
         ].map(opt => (
-          <button key={opt.value} onClick={() => onChange({ type: opt.value })}
-            className={`p-4 rounded-xl border-2 text-left transition ${data.type === opt.value ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-brand-300"}`}>
+          <button key={opt.value} onClick={() => onChange({ vehicleType: opt.value })}
+            className={`p-4 rounded-xl border-2 text-left transition ${data.vehicleType === opt.value ? "border-brand-500 bg-brand-50" : "border-gray-200 hover:border-brand-300"}`}>
             {opt.label}
           </button>
         ))}
