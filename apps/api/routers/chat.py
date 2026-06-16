@@ -24,7 +24,9 @@ async def chat_endpoint(
     _: str = Depends(get_current_user),  # auth required; uid unused for stateless chat
 ):
     async def token_generator():
-        async for token in stream_chat(body.message, [m.model_dump() for m in body.history]):
+        async for token in stream_chat(
+            body.message, [m.model_dump() for m in body.history]
+        ):
             yield f"data: {token}\n\n"
         yield "data: [DONE]\n\n"
 

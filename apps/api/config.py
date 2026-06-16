@@ -8,7 +8,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     gemini_api_key: str = ""
     firebase_project_id: str = "goolge-cdc11"
-    allowed_origins: str = "http://localhost:3000,https://goolge-cdc11.web.app,https://goolge-cdc11.firebaseapp.com"
+    allowed_origins: str = (
+        "http://localhost:3000,https://goolge-cdc11.web.app,https://goolge-cdc11.firebaseapp.com"
+    )
     env: str = "development"
 
 

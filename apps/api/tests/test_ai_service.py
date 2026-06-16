@@ -2,12 +2,14 @@
 Unit tests for the AI recommendation and chat service.
 Gemini API calls are mocked to keep tests fast and offline.
 """
+
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 # ── generate_recommendations ──────────────────────────────────────────────────
+
 
 class TestGenerateRecommendations:
     @pytest.mark.asyncio
@@ -26,6 +28,7 @@ class TestGenerateRecommendations:
             mock_get_model.return_value = mock_model
 
             from services.ai_service import generate_recommendations
+
             result = await generate_recommendations(200, 100, 175, 67)
 
         assert len(result) == 3
@@ -35,10 +38,13 @@ class TestGenerateRecommendations:
     async def test_returns_fallback_when_gemini_raises(self):
         with patch("services.ai_service._get_model") as mock_get_model:
             mock_model = MagicMock()
-            mock_model.generate_content_async = AsyncMock(side_effect=Exception("API error"))
+            mock_model.generate_content_async = AsyncMock(
+                side_effect=Exception("API error")
+            )
             mock_get_model.return_value = mock_model
 
             from services.ai_service import generate_recommendations
+
             result = await generate_recommendations(200, 100, 175, 67)
 
         assert len(result) > 0
@@ -57,6 +63,7 @@ class TestGenerateRecommendations:
             mock_get_model.return_value = mock_model
 
             from services.ai_service import generate_recommendations
+
             result = await generate_recommendations(200, 100, 175, 67)
 
         assert len(result) == 3
@@ -65,7 +72,9 @@ class TestGenerateRecommendations:
     async def test_extracts_json_array_from_surrounding_text(self):
         recs = [{"category": "food", "message": "Try veganism.", "savings_kg": 500}]
         mock_response = MagicMock()
-        mock_response.text = f"Here are your recommendations: {json.dumps(recs)} Hope that helps!"
+        mock_response.text = (
+            f"Here are your recommendations: {json.dumps(recs)} Hope that helps!"
+        )
 
         with patch("services.ai_service._get_model") as mock_get_model:
             mock_model = MagicMock()
@@ -73,13 +82,17 @@ class TestGenerateRecommendations:
             mock_get_model.return_value = mock_model
 
             from services.ai_service import generate_recommendations
+
             result = await generate_recommendations(200, 100, 175, 67)
 
         assert result[0]["category"] == "food"
 
     @pytest.mark.asyncio
     async def test_caps_at_three_recommendations(self):
-        recs = [{"category": "general", "message": f"Tip {i}", "savings_kg": 100} for i in range(6)]
+        recs = [
+            {"category": "general", "message": f"Tip {i}", "savings_kg": 100}
+            for i in range(6)
+        ]
         mock_response = MagicMock()
         mock_response.text = json.dumps(recs)
 
@@ -89,12 +102,14 @@ class TestGenerateRecommendations:
             mock_get_model.return_value = mock_model
 
             from services.ai_service import generate_recommendations
+
             result = await generate_recommendations(200, 100, 175, 67)
 
         assert len(result) <= 3
 
 
 # ── stream_chat ───────────────────────────────────────────────────────────────
+
 
 class TestStreamChat:
     @pytest.mark.asyncio
@@ -116,6 +131,7 @@ class TestStreamChat:
             mock_get_model.return_value = mock_model
 
             from services.ai_service import stream_chat
+
             chunks = [chunk async for chunk in stream_chat("Hi", [])]
 
         assert chunks == ["Hello ", "world"]
@@ -138,6 +154,7 @@ class TestStreamChat:
             mock_get_model.return_value = mock_model
 
             from services.ai_service import stream_chat
+
             history = [{"role": "user", "content": "Hello"}]
             _ = [chunk async for chunk in stream_chat("Follow-up", history)]
 

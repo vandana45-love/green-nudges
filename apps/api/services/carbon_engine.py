@@ -2,6 +2,7 @@
 Carbon emission factor math using DEFRA 2023 / EPA eGRID constants.
 All outputs in kg CO2e per year. Phase 2 will replace constants with Climatiq API.
 """
+
 from dataclasses import dataclass
 from typing import Literal, TypedDict
 
@@ -14,7 +15,7 @@ EF: dict[str, float] = {
     "car_ev": 0.053,
     "bus": 0.089,
     "train": 0.041,
-    "flight_short": 0.133,   # economy, per passenger-km
+    "flight_short": 0.133,  # economy, per passenger-km
     "flight_long": 0.195,
     # Energy (per kWh)
     "electricity_uk": 0.207,
@@ -121,12 +122,16 @@ def _calculate_transport(lifestyle: LifestyleInput, vehicle: VehicleInput) -> fl
 
     flights = int(lifestyle.get("flights_per_year", 0))
     ftype = str(lifestyle.get("flight_type", "short"))
-    flight_kg = flights * FLIGHT_KM.get(ftype, 1_500) * EF.get(f"flight_{ftype}", EF["flight_short"])
+    flight_kg = (
+        flights
+        * FLIGHT_KM.get(ftype, 1_500)
+        * EF.get(f"flight_{ftype}", EF["flight_short"])
+    )
 
     transport_mode = str(lifestyle.get("transport_mode", "car"))
     transit_kg = 0.0
     if transport_mode == "bus":
-        transit_kg = 250 * 2 * EF["bus"]       # ~250 work days × 2 km avg
+        transit_kg = 250 * 2 * EF["bus"]  # ~250 work days × 2 km avg
     elif transport_mode == "train":
         transit_kg = 250 * 10 * EF["train"]
 
@@ -145,11 +150,15 @@ def _calculate_energy(home: HomeInput) -> float:
     if heating == "electric":
         return per_person_kwh * EF["electricity_uk"]
     if heating == "oil":
-        return (per_person_kwh * 0.4 * EF["electricity_uk"]
-                + per_person_kwh * 0.6 * EF["oil_heating"])
+        return (
+            per_person_kwh * 0.4 * EF["electricity_uk"]
+            + per_person_kwh * 0.6 * EF["oil_heating"]
+        )
     # gas (default)
-    return (per_person_kwh * 0.4 * EF["electricity_uk"]
-            + per_person_kwh * 0.6 * EF["natural_gas"])
+    return (
+        per_person_kwh * 0.4 * EF["electricity_uk"]
+        + per_person_kwh * 0.6 * EF["natural_gas"]
+    )
 
 
 def _calculate_food(lifestyle: LifestyleInput) -> float:
@@ -159,10 +168,20 @@ def _calculate_food(lifestyle: LifestyleInput) -> float:
         "vegan": EF["vegan"] * 7,
         "vegetarian": EF["dairy"] * 3 + EF["vegetables"] * 4,
         "pescatarian": EF["fish"] * 2 + EF["dairy"] * 2 + EF["vegetables"] * 3,
-        "omnivore": (EF["beef"] * 0.5 + EF["chicken"] * 1
-                     + EF["pork"] * 0.5 + EF["dairy"] * 2 + EF["vegetables"] * 3),
-        "meat_heavy": (EF["beef"] * 1.5 + EF["lamb"] * 0.5
-                       + EF["pork"] * 1 + EF["chicken"] * 1 + EF["dairy"] * 2),
+        "omnivore": (
+            EF["beef"] * 0.5
+            + EF["chicken"] * 1
+            + EF["pork"] * 0.5
+            + EF["dairy"] * 2
+            + EF["vegetables"] * 3
+        ),
+        "meat_heavy": (
+            EF["beef"] * 1.5
+            + EF["lamb"] * 0.5
+            + EF["pork"] * 1
+            + EF["chicken"] * 1
+            + EF["dairy"] * 2
+        ),
     }.get(diet, 15.0)
 
     return weekly_kg * 52

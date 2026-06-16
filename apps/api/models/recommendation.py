@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, func
@@ -15,6 +17,8 @@ class Recommendation(Base):
     message: Mapped[str] = mapped_column(String(512))
     savings_kg: Mapped[float] = mapped_column(Float, default=0)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
-    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
-    user: Mapped["User"] = relationship(back_populates="recommendations")  # noqa: F821
+    user: Mapped["User"] = relationship(back_populates="recommendations")  # type: ignore[name-defined]  # noqa: F821

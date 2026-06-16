@@ -104,13 +104,15 @@ async def get_monthly(
     start = date(y, m, 1)
     end = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
 
-    logs = (await db.scalars(
-        select(DailyLog).where(
-            DailyLog.user_id == user.id,
-            DailyLog.log_date >= start,
-            DailyLog.log_date < end,
+    logs = (
+        await db.scalars(
+            select(DailyLog).where(
+                DailyLog.user_id == user.id,
+                DailyLog.log_date >= start,
+                DailyLog.log_date < end,
+            )
         )
-    )).all()
+    ).all()
 
     if not logs:
         survey = await db.scalar(
@@ -126,7 +128,9 @@ async def get_monthly(
                 shopping_kg=round(survey.shopping_kg / 12, 1),
                 total_kg=round(survey.baseline_kg / 12, 1),
             )
-        raise HTTPException(status_code=404, detail="No data found — log some emissions first")
+        raise HTTPException(
+            status_code=404, detail="No data found — log some emissions first"
+        )
 
     t = sum(log.transport_kg for log in logs)
     e = sum(log.energy_kg for log in logs)

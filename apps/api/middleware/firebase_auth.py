@@ -11,7 +11,9 @@ if not firebase_admin._apps:
         firebase_admin.initialize_app(cred, {"projectId": settings.firebase_project_id})
     except Exception:
         # Fallback: initialize without credentials (token verification still works for public JWTs)
-        firebase_admin.initialize_app(options={"projectId": settings.firebase_project_id})
+        firebase_admin.initialize_app(
+            options={"projectId": settings.firebase_project_id}
+        )
 
 
 async def get_current_user(request: Request) -> str:

@@ -32,17 +32,21 @@ async def get_recommendations(
     cache_key = f"recs:{user.id}"
     cached = await get_cached(cache_key)
     if cached:
-        recs = (await db.scalars(
-            select(Recommendation)
-            .where(Recommendation.user_id == user.id)
-            .order_by(Recommendation.generated_at.desc())
-            .limit(3)
-        )).all()
+        recs = (
+            await db.scalars(
+                select(Recommendation)
+                .where(Recommendation.user_id == user.id)
+                .order_by(Recommendation.generated_at.desc())
+                .limit(3)
+            )
+        ).all()
         if recs:
             return [RecommendationOut(**r.__dict__) for r in recs]
 
     survey = await db.scalar(
-        select(Survey).where(Survey.user_id == user.id).order_by(Survey.created_at.desc())
+        select(Survey)
+        .where(Survey.user_id == user.id)
+        .order_by(Survey.created_at.desc())
     )
     if not survey:
         raise HTTPException(404, "Complete onboarding survey first")
@@ -54,17 +58,21 @@ async def get_recommendations(
         shopping_kg=survey.shopping_kg / 12,
     )
 
-    old = (await db.scalars(select(Recommendation).where(Recommendation.user_id == user.id))).all()
+    old = (
+        await db.scalars(
+            select(Recommendation).where(Recommendation.user_id == user.id)
+        )
+    ).all()
     for r in old:
         await db.delete(r)
 
     new_recs = []
-    for r in raw_recs:
+    for raw in raw_recs:
         rec = Recommendation(
             user_id=user.id,
-            category=r.get("category", "general"),
-            message=r.get("message", ""),
-            savings_kg=float(r.get("savings_kg", 0)),
+            category=str(raw.get("category", "general")),
+            message=str(raw.get("message", "")),
+            savings_kg=float(raw.get("savings_kg", 0) or 0),  # type: ignore[arg-type]
         )
         db.add(rec)
         new_recs.append(rec)
@@ -88,7 +96,9 @@ async def mark_read(
         raise HTTPException(404, "User not found")
     # Only allow marking own recommendations as read
     rec = await db.scalar(
-        select(Recommendation).where(Recommendation.id == rec_id, Recommendation.user_id == user.id)
+        select(Recommendation).where(
+            Recommendation.id == rec_id, Recommendation.user_id == user.id
+        )
     )
     if not rec:
         raise HTTPException(404, "Recommendation not found")

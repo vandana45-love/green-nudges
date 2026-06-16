@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, Float, ForeignKey, func
@@ -20,6 +22,8 @@ class Survey(Base):
     energy_kg: Mapped[float] = mapped_column(Float, default=0)
     food_kg: Mapped[float] = mapped_column(Float, default=0)
     shopping_kg: Mapped[float] = mapped_column(Float, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
-    user: Mapped["User"] = relationship(back_populates="surveys")  # noqa: F821
+    user: Mapped["User"] = relationship(back_populates="surveys")  # type: ignore[name-defined]  # noqa: F821

@@ -2,6 +2,7 @@
 Unit tests for the carbon calculation engine.
 Tests cover all diet types, transport modes, energy types, and edge cases.
 """
+
 import pytest
 
 from services.carbon_engine import (
@@ -25,6 +26,7 @@ BASE_VEHICLE = {"type": "ice"}
 
 
 # ── Output shape ──────────────────────────────────────────────────────────────
+
 
 class TestOutputShape:
     def test_returns_carbon_breakdown_instance(self):
@@ -55,6 +57,7 @@ class TestOutputShape:
 
 # ── Diet ─────────────────────────────────────────────────────────────────────
 
+
 class TestDietEmissions:
     DIETS = ["vegan", "vegetarian", "pescatarian", "omnivore", "meat_heavy"]
 
@@ -68,9 +71,11 @@ class TestDietEmissions:
         for diet in self.DIETS[:-1]:
             assert results["meat_heavy"] > results[diet]
 
-    @pytest.mark.parametrize("diet", ["vegan", "vegetarian", "pescatarian", "omnivore", "meat_heavy"])
+    @pytest.mark.parametrize(
+        "diet", ["vegan", "vegetarian", "pescatarian", "omnivore", "meat_heavy"]
+    )
     def test_all_diets_return_positive_value(self, diet: str):
-        assert _calculate_food({"diet": diet}) > 0
+        assert _calculate_food({"diet": diet}) > 0  # type: ignore[typeddict-item]
 
     def test_unknown_diet_falls_back_to_default(self):
         result = _calculate_food({"diet": "invalid_diet"})
@@ -78,6 +83,7 @@ class TestDietEmissions:
 
 
 # ── Transport ─────────────────────────────────────────────────────────────────
+
 
 class TestTransportEmissions:
     def test_ev_lower_than_ice(self):
@@ -92,40 +98,59 @@ class TestTransportEmissions:
         assert ev < hybrid < ice
 
     def test_no_car_removes_car_emissions(self):
-        no_car = _calculate_transport({**BASE_LIFESTYLE, "flights_per_year": 0}, {"type": "none"})
+        no_car = _calculate_transport(
+            {**BASE_LIFESTYLE, "flights_per_year": 0}, {"type": "none"}
+        )
         assert no_car == pytest.approx(0.0)
 
     def test_bus_lower_than_car(self):
-        bus = _calculate_transport({**BASE_LIFESTYLE, "transport_mode": "bus"}, BASE_VEHICLE)
-        car = _calculate_transport({**BASE_LIFESTYLE, "transport_mode": "car"}, BASE_VEHICLE)
+        bus = _calculate_transport(
+            {**BASE_LIFESTYLE, "transport_mode": "bus"}, BASE_VEHICLE
+        )
+        car = _calculate_transport(
+            {**BASE_LIFESTYLE, "transport_mode": "car"}, BASE_VEHICLE
+        )
         assert bus < car
 
     def test_train_lower_than_bus(self):
-        train = _calculate_transport({**BASE_LIFESTYLE, "transport_mode": "train"}, BASE_VEHICLE)
-        bus = _calculate_transport({**BASE_LIFESTYLE, "transport_mode": "bus"}, BASE_VEHICLE)
+        train = _calculate_transport(
+            {**BASE_LIFESTYLE, "transport_mode": "train"}, BASE_VEHICLE
+        )
+        bus = _calculate_transport(
+            {**BASE_LIFESTYLE, "transport_mode": "bus"}, BASE_VEHICLE
+        )
         assert train < bus
 
     def test_zero_flights_removes_flight_emissions(self):
-        no_flights = _calculate_transport({**BASE_LIFESTYLE, "flights_per_year": 0}, BASE_VEHICLE)
-        with_flights = _calculate_transport({**BASE_LIFESTYLE, "flights_per_year": 5}, BASE_VEHICLE)
+        no_flights = _calculate_transport(
+            {**BASE_LIFESTYLE, "flights_per_year": 0}, BASE_VEHICLE
+        )
+        with_flights = _calculate_transport(
+            {**BASE_LIFESTYLE, "flights_per_year": 5}, BASE_VEHICLE
+        )
         assert no_flights < with_flights
 
     def test_long_haul_more_than_short_haul(self):
         short = _calculate_transport(
-            {**BASE_LIFESTYLE, "flights_per_year": 1, "flight_type": "short"}, BASE_VEHICLE
+            {**BASE_LIFESTYLE, "flights_per_year": 1, "flight_type": "short"},
+            BASE_VEHICLE,
         )
         long = _calculate_transport(
-            {**BASE_LIFESTYLE, "flights_per_year": 1, "flight_type": "long"}, BASE_VEHICLE
+            {**BASE_LIFESTYLE, "flights_per_year": 1, "flight_type": "long"},
+            BASE_VEHICLE,
         )
         assert long > short
 
     def test_negative_flights_treated_as_zero(self):
         """Edge case: malformed input with negative flights should not crash."""
-        result = _calculate_transport({**BASE_LIFESTYLE, "flights_per_year": -2}, BASE_VEHICLE)
+        result = _calculate_transport(
+            {**BASE_LIFESTYLE, "flights_per_year": -2}, BASE_VEHICLE
+        )
         assert isinstance(result, float)
 
 
 # ── Energy ────────────────────────────────────────────────────────────────────
+
 
 class TestEnergyEmissions:
     def test_electric_lower_than_gas(self):
@@ -161,12 +186,18 @@ class TestEnergyEmissions:
 
 # ── Integration ───────────────────────────────────────────────────────────────
 
+
 class TestIntegration:
     def test_full_calculation_with_minimal_footprint(self):
         """Vegan, EV, electric heating, no flights → lowest possible baseline."""
         result = calculate_baseline(
             {"house_size_m2": 40, "occupants": 4, "heating_type": "electric"},
-            {"diet": "vegan", "flights_per_year": 0, "flight_type": "short", "transport_mode": "bicycle"},
+            {
+                "diet": "vegan",
+                "flights_per_year": 0,
+                "flight_type": "short",
+                "transport_mode": "bicycle",
+            },
             {"type": "none"},
         )
         assert result.total_kg < 2000  # well below UK average of ~8,000
@@ -175,7 +206,12 @@ class TestIntegration:
         """Meat-heavy, ICE car, oil heating, many long flights → high baseline."""
         result = calculate_baseline(
             {"house_size_m2": 200, "occupants": 1, "heating_type": "oil"},
-            {"diet": "meat_heavy", "flights_per_year": 10, "flight_type": "long", "transport_mode": "car"},
+            {
+                "diet": "meat_heavy",
+                "flights_per_year": 10,
+                "flight_type": "long",
+                "transport_mode": "car",
+            },
             {"type": "ice"},
         )
         assert result.total_kg > 10_000

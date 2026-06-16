@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date, datetime
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, UniqueConstraint, func
@@ -18,6 +20,8 @@ class DailyLog(Base):
     food_kg: Mapped[float] = mapped_column(Float, default=0)
     shopping_kg: Mapped[float] = mapped_column(Float, default=0)
     total_kg: Mapped[float] = mapped_column(Float, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
-    user: Mapped["User"] = relationship(back_populates="daily_logs")  # noqa: F821
+    user: Mapped["User"] = relationship(back_populates="daily_logs")  # type: ignore[name-defined]  # noqa: F821

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -8,7 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db import get_db
 from middleware.firebase_auth import get_current_user
 from models import Survey, User
-from services.carbon_engine import calculate_baseline
+from services.carbon_engine import (
+    HomeInput,
+    LifestyleInput,
+    VehicleInput,
+    calculate_baseline,
+)
 
 router = APIRouter(prefix="/survey", tags=["survey"])
 
@@ -20,7 +25,9 @@ class HomeData(BaseModel):
 
 
 class LifestyleData(BaseModel):
-    diet: Literal["vegan", "vegetarian", "pescatarian", "omnivore", "meat_heavy"] = "omnivore"
+    diet: Literal["vegan", "vegetarian", "pescatarian", "omnivore", "meat_heavy"] = (
+        "omnivore"
+    )
     flights_per_year: int = Field(ge=0, le=365, description="Return flights per year")
     flight_type: Literal["short", "long"] = "short"
     transport_mode: Literal["car", "bus", "train", "bicycle"] = "car"
@@ -63,9 +70,9 @@ async def submit_survey(
     """Submit the onboarding survey and return the calculated carbon baseline."""
     user = await _get_or_create_user(user_uid, db)
     bd = calculate_baseline(
-        body.home.model_dump(),
-        body.lifestyle.model_dump(),
-        body.vehicle.model_dump(),
+        cast(HomeInput, body.home.model_dump()),
+        cast(LifestyleInput, body.lifestyle.model_dump()),
+        cast(VehicleInput, body.vehicle.model_dump()),
     )
 
     survey = Survey(
@@ -106,7 +113,9 @@ async def get_my_survey(
         .order_by(Survey.created_at.desc())
     )
     if not survey:
-        raise HTTPException(status_code=404, detail="No survey found — complete onboarding first")
+        raise HTTPException(
+            status_code=404, detail="No survey found — complete onboarding first"
+        )
     return SurveyOut(
         baseline_kg=survey.baseline_kg,
         transport_kg=survey.transport_kg,

@@ -1,4 +1,5 @@
 """AI recommendation and chat service backed by Google Gemini 2.0 Flash."""
+
 import json
 import logging
 import re
@@ -11,7 +12,9 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 if not settings.gemini_api_key:
-    logger.warning("GEMINI_API_KEY not configured — AI features will return fallback responses")
+    logger.warning(
+        "GEMINI_API_KEY not configured — AI features will return fallback responses"
+    )
 else:
     genai.configure(api_key=settings.gemini_api_key)
 
@@ -56,13 +59,27 @@ Sort by highest savings_kg first."""
         except json.JSONDecodeError:
             pass
     return [
-        {"category": "transport", "message": "Switch one weekly car trip to public transport.", "savings_kg": 200},
-        {"category": "food", "message": "Try 2 plant-based days per week.", "savings_kg": 300},
-        {"category": "energy", "message": "Lower thermostat by 1°C and switch to LEDs.", "savings_kg": 150},
+        {
+            "category": "transport",
+            "message": "Switch one weekly car trip to public transport.",
+            "savings_kg": 200,
+        },
+        {
+            "category": "food",
+            "message": "Try 2 plant-based days per week.",
+            "savings_kg": 300,
+        },
+        {
+            "category": "energy",
+            "message": "Lower thermostat by 1°C and switch to LEDs.",
+            "savings_kg": 150,
+        },
     ]
 
 
-async def stream_chat(message: str, history: list[dict[str, str]]) -> AsyncIterator[str]:
+async def stream_chat(
+    message: str, history: list[dict[str, str]]
+) -> AsyncIterator[str]:
     model = _get_model()
     chat = model.start_chat(
         history=[

@@ -1,4 +1,5 @@
 """Pytest configuration: add apps/api to sys.path for local imports."""
+
 import pathlib
 import sys
 
