@@ -1,4 +1,5 @@
 import { calculateCarbon } from "../carbon";
+import type { SurveyInput } from "../carbon";
 
 jest.mock("firebase/firestore", () => ({
   doc: jest.fn(),
@@ -47,7 +48,7 @@ describe("firestore helpers", () => {
   describe("saveSurvey", () => {
     it("calls setDoc and returns calculated breakdown", async () => {
       (firestoreModule.setDoc as jest.Mock).mockResolvedValue(undefined);
-      const input = { houseSizeM2: 80, occupants: 2, heatingType: "gas", diet: "vegan", flightsPerYear: 0, flightType: "short", transportMode: "bicycle", vehicleType: "none" };
+      const input: SurveyInput = { houseSizeM2: 80, occupants: 2, heatingType: "gas", diet: "vegan", flightsPerYear: 0, flightType: "short", transportMode: "bicycle", vehicleType: "none" };
       const result = await saveSurvey("uid-123", input);
       expect(firestoreModule.setDoc).toHaveBeenCalledTimes(1);
       expect(result.baselineKg).toBeGreaterThan(0);
@@ -70,6 +71,15 @@ describe("firestore helpers", () => {
       });
       const result = await getRecommendations("uid-123");
       expect(result).toEqual(items);
+    });
+
+    it("returns empty array when document exists but has no items field", async () => {
+      (firestoreModule.getDoc as jest.Mock).mockResolvedValue({
+        exists: () => true,
+        data: () => ({}),
+      });
+      const result = await getRecommendations("uid-123");
+      expect(result).toEqual([]);
     });
   });
 

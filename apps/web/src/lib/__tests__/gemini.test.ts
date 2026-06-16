@@ -76,15 +76,15 @@ describe("generateRecommendations", () => {
       response: { text: () => `Here are your recs: ${JSON.stringify(recs)} Hope this helps!` },
     });
     const result = await generateRecommendations(MOCK_SURVEY);
-    expect(result.some((r: any) => r.category === "food")).toBe(true);
+    expect(result.some((r: { category: string }) => r.category === "food")).toBe(true);
   });
 });
 
-describe("streamGeminiChat — no API key", () => {
-  it("yields not-configured message when KEY is empty", async () => {
+describe("no API key", () => {
+  it("streamGeminiChat yields not-configured message when KEY is absent", async () => {
     let streamFn: typeof streamGeminiChat;
     const original = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY = "";
+    delete process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     jest.isolateModules(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       ({ streamGeminiChat: streamFn } = require("../gemini"));
@@ -96,6 +96,20 @@ describe("streamGeminiChat — no API key", () => {
     }
     expect(chunks[0]).toMatch(/not configured/i);
   });
+
+  it("generateRecommendations returns fallback when KEY is absent", async () => {
+    let genRecsFn: typeof generateRecommendations;
+    const original = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    delete process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      ({ generateRecommendations: genRecsFn } = require("../gemini"));
+    });
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY = original;
+    const result = await genRecsFn!(MOCK_SURVEY);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0]).toHaveProperty("category");
+  });
 });
 
 describe("streamGeminiChat", () => {
@@ -104,6 +118,7 @@ describe("streamGeminiChat", () => {
   it("yields text chunks from Gemini stream", async () => {
     const fakeStream = (async function* () {
       yield { text: () => "Hello " };
+      yield { text: () => "" };
       yield { text: () => "world" };
     })();
     mockSendMessageStream.mockResolvedValue({ stream: fakeStream });
@@ -132,5 +147,26 @@ describe("streamGeminiChat", () => {
     expect(mockStartChat).toHaveBeenCalledWith(
       expect.objectContaining({ history: expect.any(Array) })
     );
+  });
+
+  it("maps assistant history role to model for Gemini API", async () => {
+    const fakeStream = (async function* () { yield { text: () => "ok" }; })();
+    mockSendMessageStream.mockResolvedValue({ stream: fakeStream });
+    const history = [
+      { role: "user", content: "Hello" },
+      { role: "assistant", content: "Hi there" },
+    ];
+    for await (const _ of streamGeminiChat("Follow up", history)) { /* drain */ }
+    const calls = mockStartChat.mock.calls as unknown as Array<[{ history: Array<{ role: string }> }]>;
+    expect(calls[0][0].history[1].role).toBe("model");
+  });
+
+  it("yields fallback message when a non-Error is thrown", async () => {
+    mockSendMessageStream.mockRejectedValue("string error");
+    const chunks: string[] = [];
+    for await (const chunk of streamGeminiChat("Hi", [])) {
+      chunks.push(chunk);
+    }
+    expect(chunks[0]).toMatch(/Could not connect to Gemini/i);
   });
 });

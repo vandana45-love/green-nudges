@@ -123,6 +123,12 @@ describe("calculateCarbon", () => {
       expect(electric.energyKg).toBeLessThan(gas.energyKg);
     });
 
+    it("oil heating produces more emissions than gas", () => {
+      const oil = calculateCarbon({ ...BASE, heatingType: "oil" });
+      const gas = calculateCarbon({ ...BASE, heatingType: "gas" });
+      expect(oil.energyKg).toBeGreaterThan(gas.energyKg);
+    });
+
     it("more occupants reduces per-person energy emissions", () => {
       const single = calculateCarbon({ ...BASE, occupants: 1 });
       const family = calculateCarbon({ ...BASE, occupants: 4 });
